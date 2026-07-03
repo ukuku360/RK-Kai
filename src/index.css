@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600..800&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --paper: #ffffff;
+  --ground: #f4f7f5;
+  --ink: #131614;
+  --text: #3f4b45;
+  --muted: #707b75;
+  --line: #dde5df;
+  --line-strong: #c4d0c8;
+  --green: #1d8f79;
+  --coral: #f36f45;
+  --amber: #d2a522;
+  --blue: #4f70a7;
+  --display: 'Fraunces', Georgia, serif;
+  --body: 'IBM Plex Sans', 'Aptos', sans-serif;
+  --mono: 'SFMono-Regular', 'Cascadia Code', monospace;
+  --shadow: 0 20px 60px rgba(19, 22, 20, 0.08);
+  color: var(--text);
+  background:
+    linear-gradient(90deg, rgba(19, 22, 20, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(19, 22, 20, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at top left, rgba(29, 143, 121, 0.12), transparent 32rem),
+    radial-gradient(circle at 90% 12%, rgba(243, 111, 69, 0.12), transparent 28rem),
+    var(--ground);
+  background-size:
+    42px 42px,
+    42px 42px,
+    auto,
+    auto,
+    auto;
+  font-family: var(--body);
+  font-synthesis: none;
+  letter-spacing: 0;
+  line-height: 1.45;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--ground);
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+}
+
+img {
+  display: block;
+}
