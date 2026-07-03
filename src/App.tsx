@@ -7,9 +7,12 @@ import {
   ClipboardCheck,
   ExternalLink,
   Home,
+  KeyRound,
   MapPin,
   MessageSquareText,
   Phone,
+  Search,
+  ShieldCheck,
   SlidersHorizontal,
   Wallet,
 } from 'lucide-react'
@@ -167,6 +170,7 @@ const properties: Property[] = [
 const sourceLabels: Record<string, string> = {
   homepage: 'RoomingKos homepage',
   'roomingkos-site': 'RoomingKos website',
+  'site-preview': 'RoomingKos site preview',
   'swanston-page': 'Swanston property page',
   'student-housing': 'Student housing campaign',
 }
@@ -175,6 +179,10 @@ function getSourceLabel() {
   const params = new URLSearchParams(window.location.search)
   const source = params.get('source') ?? 'roomingkos-site'
   return sourceLabels[source] ?? source.replace(/[-_]/g, ' ')
+}
+
+function isSitePreview() {
+  return new URLSearchParams(window.location.search).get('view') === 'site'
 }
 
 function budgetRange(answer?: string) {
@@ -278,7 +286,99 @@ function shortValue(value?: string) {
   return value ?? 'Not captured'
 }
 
-function App() {
+function RoomingKosSitePreview() {
+  const kaiUrl = '?source=site-preview&from=homepage-toggle'
+
+  return (
+    <main className="site-preview">
+      <header className="site-preview-nav">
+        <div className="brand-lockup">
+          <div className="brand-mark">RK</div>
+          <div>
+            <p className="eyebrow">RoomingKos company website</p>
+            <strong>RoomingKos</strong>
+          </div>
+        </div>
+        <nav aria-label="Demo website navigation">
+          <a href="#rooms">Rooms</a>
+          <a href="#locations">Locations</a>
+          <a href="#support">Support</a>
+        </nav>
+      </header>
+
+      <section className="site-hero">
+        <div className="site-hero-copy">
+          <p className="eyebrow">Student housing in Melbourne</p>
+          <h1>Rooms that fit your budget, move-in date and lifestyle.</h1>
+          <p>
+            Tell Kai what matters most, then get a short list of room options
+            with clear next steps for inspection and staff follow-up.
+          </p>
+          <div className="site-hero-actions">
+            <a className="primary-link" href={kaiUrl}>
+              <Bot size={18} />
+              Ask Kai to match a room
+            </a>
+            <a className="secondary-link" href="#rooms">
+              View sample rooms
+            </a>
+          </div>
+        </div>
+
+        <div className="site-hero-visual" aria-label="Featured RoomingKos room">
+          <img src={properties[0].image} alt="RoomingKos featured studio" />
+          <div className="site-floating-card">
+            <span>Available in 5 days</span>
+            <strong>Swanston Central Studio</strong>
+            <small>$455/wk · CBD / RMIT</small>
+          </div>
+        </div>
+      </section>
+
+      <section className="site-proof-grid" id="support" aria-label="RoomingKos service highlights">
+        <article>
+          <Search size={22} />
+          <h2>Search faster</h2>
+          <p>Visitors can start from budget, area, move-in timing or facilities.</p>
+        </article>
+        <article>
+          <KeyRound size={22} />
+          <h2>Convert enquiries</h2>
+          <p>Kai turns browsing into a structured lead and inspection-ready brief.</p>
+        </article>
+        <article>
+          <ShieldCheck size={22} />
+          <h2>Keep staff in control</h2>
+          <p>Recommendations stay explainable and hand off to the RoomingKos team.</p>
+        </article>
+      </section>
+
+      <section className="site-room-strip" id="rooms" aria-label="Sample rooms">
+        {properties.slice(0, 3).map((property) => (
+          <article key={property.id}>
+            <img src={property.image} alt={`${property.name} interior`} />
+            <div>
+              <strong>{property.name}</strong>
+              <span>
+                {property.neighborhood} · ${property.weekly}/wk
+              </span>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <a className="kai-site-toggle" href={kaiUrl} aria-label="Open Kai room matching assistant">
+        <span>K</span>
+        <strong>
+          Ask Kai
+          <small>AI room matching</small>
+        </strong>
+      </a>
+    </main>
+  )
+}
+
+function KaiApp() {
   const sourceLabel = useMemo(() => getSourceLabel(), [])
   const [prefs, setPrefs] = useState<LeadPrefs>({})
   const [customAnswer, setCustomAnswer] = useState('')
@@ -392,9 +492,9 @@ function App() {
             <h1>Kai</h1>
           </div>
         </div>
-        <a className="site-link" href="?source=homepage">
+        <a className="site-link" href="?view=site">
           <ExternalLink size={18} />
-          Website referral
+          Preview site toggle
         </a>
       </section>
 
@@ -570,6 +670,10 @@ function App() {
       </section>
     </main>
   )
+}
+
+function App() {
+  return isSitePreview() ? <RoomingKosSitePreview /> : <KaiApp />
 }
 
 export default App

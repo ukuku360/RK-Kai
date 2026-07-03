@@ -4,6 +4,8 @@ Kai is a sales-conversion demo for RoomingKos. It captures a prospect's room sea
 
 Live demo: https://rk-8fzxhmylk-yoonho-nas-projects.vercel.app
 
+Website toggle preview: https://rk-8fzxhmylk-yoonho-nas-projects.vercel.app/?view=site
+
 ## Demo Scope
 
 - Conversational intake for budget, move-in timing, preferred area, stay length, lifestyle, and facilities.

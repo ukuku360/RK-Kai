@@ -1,7 +1,8 @@
 (() => {
   const script = document.currentScript;
   const configuredUrl =
-    script?.dataset.kaiUrl || 'https://rk-kai.vercel.app/?source=roomingkos-site';
+    script?.dataset.kaiUrl ||
+    new URL('/?source=roomingkos-site', script?.src || window.location.href).toString();
 
   if (document.querySelector('[data-kai-toggle-root]')) {
     return;
