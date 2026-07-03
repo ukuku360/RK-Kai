@@ -7,6 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint src",
+    "verify:catalog": "node scripts/verify-kai-catalog.mjs",
+    "qa:logic": "node scripts/qa-kai-logic.mjs",
+    "qa": "npm run verify:catalog && npm run qa:logic && npm run build && npm run lint",
     "preview": "vite preview"
   },
   "dependencies": {

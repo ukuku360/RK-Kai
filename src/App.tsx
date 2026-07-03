@@ -1,33 +1,57 @@
 import {
   ArrowRight,
+  BadgeCheck,
+  BarChart3,
   Bot,
   Building2,
   CalendarDays,
   Check,
   ClipboardCheck,
+  Clock3,
+  Database,
   ExternalLink,
+  FileCheck2,
   Home,
   KeyRound,
+  LineChart,
   MapPin,
   MessageSquareText,
   Phone,
   Search,
+  Send,
   ShieldCheck,
   SlidersHorizontal,
+  Sparkles,
+  Target,
+  TrendingUp,
   Wallet,
+  Zap,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  roomingKosCatalog,
+} from './data/roomingkosCatalog.ts'
+import {
+  buildHandoffText,
+  catalogAudit,
+  catalogStats,
+  defaultCatalogSort,
+  getSourceLabelFromSearch,
+  isSitePreviewFromSearch,
+  leadReadinessScore,
+  locationLabel,
+  money,
+  priceLabel,
+  readinessLabel,
+  recommendationsFor,
+  roomTypeCountLabel,
+  roomTypeSummary,
+  shortValue,
+  statusAccent,
+  type LeadPrefs,
+  type StepKey,
+} from './kaiLogic.ts'
 import './App.css'
-
-type StepKey =
-  | 'budget'
-  | 'moveIn'
-  | 'location'
-  | 'stay'
-  | 'lifestyle'
-  | 'facilities'
-
-type LeadPrefs = Partial<Record<StepKey, string>>
 
 type Message = {
   id: string
@@ -41,20 +65,6 @@ type Step = {
   prompt: string
   icon: typeof Wallet
   options: string[]
-}
-
-type Property = {
-  id: string
-  name: string
-  neighborhood: string
-  weekly: number
-  availableInDays: number
-  minStayMonths: number
-  roomType: string
-  image: string
-  facilities: string[]
-  tags: string[]
-  accent: string
 }
 
 const steps: Step[] = [
@@ -108,186 +118,51 @@ const steps: Step[] = [
   },
 ]
 
-const properties: Property[] = [
-  {
-    id: 'swanston-studio',
-    name: 'Swanston Central Studio',
-    neighborhood: 'CBD / RMIT',
-    weekly: 455,
-    availableInDays: 5,
-    minStayMonths: 6,
-    roomType: 'Private studio',
-    image:
-      'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=900&q=80',
-    facilities: ['Furnished', 'Private bathroom', 'Bills included'],
-    tags: ['Study-focused', 'Work from home', 'Near tram'],
-    accent: '#f36f45',
-  },
-  {
-    id: 'carlton-share',
-    name: 'Carlton Student Share',
-    neighborhood: 'Carlton / UniMelb',
-    weekly: 335,
-    availableInDays: 12,
-    minStayMonths: 3,
-    roomType: 'Private room',
-    image:
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80',
-    facilities: ['Furnished', 'Bills included', 'Laundry'],
-    tags: ['Social', 'Study-focused', 'UniMelb'],
-    accent: '#1d8f79',
-  },
-  {
-    id: 'north-melbourne',
-    name: 'North Melbourne Ensuite',
-    neighborhood: 'North Melbourne',
-    weekly: 405,
-    availableInDays: 20,
-    minStayMonths: 6,
-    roomType: 'Ensuite room',
-    image:
-      'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=900&q=80',
-    facilities: ['Private bathroom', 'Furnished', 'Gym nearby'],
-    tags: ['Quiet', 'Work from home', 'Near tram'],
-    accent: '#d2a522',
-  },
-  {
-    id: 'docklands-apartment',
-    name: 'Docklands Riverside Room',
-    neighborhood: 'Docklands',
-    weekly: 385,
-    availableInDays: 30,
-    minStayMonths: 12,
-    roomType: 'Private room',
-    image:
-      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=900&q=80',
-    facilities: ['Furnished', 'Gym nearby', 'Bills included'],
-    tags: ['Quiet', 'Work from home', 'Near tram'],
-    accent: '#4f70a7',
-  },
-]
-
-const sourceLabels: Record<string, string> = {
-  homepage: 'RoomingKos homepage',
-  'roomingkos-site': 'RoomingKos website',
-  'site-preview': 'RoomingKos site preview',
-  'swanston-page': 'Swanston property page',
-  'student-housing': 'Student housing campaign',
-}
-
-function getSourceLabel() {
-  const params = new URLSearchParams(window.location.search)
-  const source = params.get('source') ?? 'roomingkos-site'
-  return sourceLabels[source] ?? source.replace(/[-_]/g, ' ')
-}
-
-function isSitePreview() {
-  return new URLSearchParams(window.location.search).get('view') === 'site'
-}
-
-function budgetRange(answer?: string) {
-  if (!answer) return null
-  if (answer.includes('Under')) return { min: 0, max: 300 }
-  if (answer.includes('300-380')) return { min: 300, max: 380 }
-  if (answer.includes('380-480')) return { min: 380, max: 480 }
-  return { min: 0, max: 600 }
-}
-
-function requestedMoveInDays(answer?: string) {
-  if (!answer) return null
-  if (answer === 'This week') return 7
-  if (answer === 'In 2 weeks') return 14
-  if (answer === 'Next month') return 31
-  return 45
-}
-
-function requestedStayMonths(answer?: string) {
-  if (!answer) return null
-  if (answer === '3 months') return 3
-  if (answer === '6 months') return 6
-  if (answer === '12 months') return 12
-  return 6
-}
-
-function scoreProperty(property: Property, prefs: LeadPrefs) {
-  let score = 58
-
-  const budget = budgetRange(prefs.budget)
-  if (budget) {
-    if (property.weekly >= budget.min && property.weekly <= budget.max) {
-      score += 18
-    } else if (property.weekly <= budget.max + 45) {
-      score += 8
-    } else {
-      score -= 14
-    }
-  }
-
-  const moveInDays = requestedMoveInDays(prefs.moveIn)
-  if (moveInDays) {
-    score += property.availableInDays <= moveInDays ? 12 : -4
-  }
-
-  if (prefs.location && prefs.location !== 'Flexible') {
-    const target = prefs.location.toLowerCase()
-    const searchable = `${property.neighborhood} ${property.tags.join(' ')}`.toLowerCase()
-    score += searchable.includes(target.split(' / ')[0]) ? 14 : -3
-  }
-
-  const stayMonths = requestedStayMonths(prefs.stay)
-  if (stayMonths) {
-    score += property.minStayMonths <= stayMonths ? 10 : -6
-  }
-
-  if (prefs.lifestyle) {
-    score += property.tags.includes(prefs.lifestyle) ? 10 : 0
-  }
-
-  if (prefs.facilities && prefs.facilities !== 'No strong preference') {
-    score += property.facilities.includes(prefs.facilities) ? 10 : -2
-  }
-
-  return Math.max(42, Math.min(98, score))
-}
-
-function matchReasons(property: Property, prefs: LeadPrefs) {
-  const reasons: string[] = []
-
-  const budget = budgetRange(prefs.budget)
-  if (budget && property.weekly >= budget.min && property.weekly <= budget.max) {
-    reasons.push(`fits the ${prefs.budget} budget band`)
-  }
-
-  const moveInDays = requestedMoveInDays(prefs.moveIn)
-  if (moveInDays && property.availableInDays <= moveInDays) {
-    reasons.push(`available within ${prefs.moveIn?.toLowerCase()}`)
-  }
-
-  if (prefs.location && property.neighborhood.includes(prefs.location.split(' / ')[0])) {
-    reasons.push(`matches the ${prefs.location} location preference`)
-  }
-
-  if (prefs.lifestyle && property.tags.includes(prefs.lifestyle)) {
-    reasons.push(`supports a ${prefs.lifestyle.toLowerCase()} lifestyle`)
-  }
-
-  if (prefs.facilities && property.facilities.includes(prefs.facilities)) {
-    reasons.push(`includes ${prefs.facilities.toLowerCase()}`)
-  }
-
-  if (reasons.length === 0) {
-    return ['keeps the search close to the strongest available RoomingKos options']
-  }
-
-  return reasons.slice(0, 2)
-}
-
-function shortValue(value?: string) {
-  return value ?? 'Not captured'
+function MetricTile({
+  icon: Icon,
+  value,
+  label,
+  caption,
+}: {
+  icon: typeof Wallet
+  value: string
+  label: string
+  caption: string
+}) {
+  return (
+    <article className="metric-tile">
+      <Icon size={19} />
+      <strong>{value}</strong>
+      <span>{label}</span>
+      <small>{caption}</small>
+    </article>
+  )
 }
 
 function RoomingKosSitePreview() {
   const kaiUrl = '?source=site-preview&from=homepage-toggle'
+  const siteOptions = [...roomingKosCatalog]
+    .sort(defaultCatalogSort)
+    .filter((option) => option.status === 'Available')
+    .slice(0, 3)
+  const heroOption = siteOptions[0] ?? roomingKosCatalog[0]
+  const proofCards = [
+    {
+      icon: Search,
+      title: 'Search the live catalog',
+      text: `${catalogStats.total} public listings, ${catalogStats.groupCounts.building} buildings and ${catalogStats.groupCounts.rooming_house} rooming houses.`,
+    },
+    {
+      icon: Zap,
+      title: 'Convert anonymous visitors',
+      text: 'Kai collects budget, timing, location and lifestyle before staff spend time on the lead.',
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Keep staff in control',
+      text: `${catalogAudit.starRezRows} public StarRez entry rows stay as provenance, not automated submissions.`,
+    },
+  ]
 
   return (
     <main className="site-preview">
@@ -308,11 +183,11 @@ function RoomingKosSitePreview() {
 
       <section className="site-hero">
         <div className="site-hero-copy">
-          <p className="eyebrow">Student housing in Melbourne</p>
-          <h1>Rooms that fit your budget, move-in date and lifestyle.</h1>
+          <p className="eyebrow">Sales AI entrypoint</p>
+          <h1>Match rooms, capture intent, hand off cleanly.</h1>
           <p>
-            Tell Kai what matters most, then get a short list of room options
-            with clear next steps for inspection and staff follow-up.
+            Kai turns RoomingKos browsing into an explainable shortlist and a staff-ready
+            sales brief using the verified public catalog.
           </p>
           <div className="site-hero-actions">
             <a className="primary-link" href={kaiUrl}>
@@ -320,47 +195,44 @@ function RoomingKosSitePreview() {
               Ask Kai to match a room
             </a>
             <a className="secondary-link" href="#rooms">
-              View sample rooms
+              View current options
             </a>
           </div>
         </div>
 
         <div className="site-hero-visual" aria-label="Featured RoomingKos room">
-          <img src={properties[0].image} alt="RoomingKos featured studio" />
+          <img src={heroOption.imageUrl} alt={`${heroOption.displayName} RoomingKos listing`} />
           <div className="site-floating-card">
-            <span>Available in 5 days</span>
-            <strong>Swanston Central Studio</strong>
-            <small>$455/wk · CBD / RMIT</small>
+            <span>{heroOption.status}</span>
+            <strong>{heroOption.displayName}</strong>
+            <small>
+              {priceLabel(heroOption)} · {locationLabel(heroOption)}
+            </small>
           </div>
         </div>
       </section>
 
       <section className="site-proof-grid" id="support" aria-label="RoomingKos service highlights">
-        <article>
-          <Search size={22} />
-          <h2>Search faster</h2>
-          <p>Visitors can start from budget, area, move-in timing or facilities.</p>
-        </article>
-        <article>
-          <KeyRound size={22} />
-          <h2>Convert enquiries</h2>
-          <p>Kai turns browsing into a structured lead and inspection-ready brief.</p>
-        </article>
-        <article>
-          <ShieldCheck size={22} />
-          <h2>Keep staff in control</h2>
-          <p>Recommendations stay explainable and hand off to the RoomingKos team.</p>
-        </article>
+        {proofCards.map((card) => {
+          const Icon = card.icon
+          return (
+            <article key={card.title}>
+              <Icon size={22} />
+              <h2>{card.title}</h2>
+              <p>{card.text}</p>
+            </article>
+          )
+        })}
       </section>
 
-      <section className="site-room-strip" id="rooms" aria-label="Sample rooms">
-        {properties.slice(0, 3).map((property) => (
-          <article key={property.id}>
-            <img src={property.image} alt={`${property.name} interior`} />
+      <section className="site-room-strip" id="rooms" aria-label="RoomingKos options">
+        {siteOptions.map((option) => (
+          <article key={option.id}>
+            <img src={option.imageUrl} alt={`${option.displayName} listing`} />
             <div>
-              <strong>{property.name}</strong>
+              <strong>{option.displayName}</strong>
               <span>
-                {property.neighborhood} · ${property.weekly}/wk
+                {option.status} · {priceLabel(option)}
               </span>
             </div>
           </article>
@@ -379,16 +251,19 @@ function RoomingKosSitePreview() {
 }
 
 function KaiApp() {
-  const sourceLabel = useMemo(() => getSourceLabel(), [])
+  const sourceLabel = useMemo(() => getSourceLabelFromSearch(window.location.search), [])
   const [prefs, setPrefs] = useState<LeadPrefs>({})
   const [customAnswer, setCustomAnswer] = useState('')
-  const [selectedPropertyId, setSelectedPropertyId] = useState(properties[0].id)
+  const [selectedPropertyId, setSelectedPropertyId] = useState(
+    [...roomingKosCatalog].sort(defaultCatalogSort)[0].id,
+  )
+  const [requestedInspectionId, setRequestedInspectionId] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'm-0',
       from: 'kai',
-      text: `Hi, I'm Kai. I can help narrow RoomingKos options from your budget, move-in timing, location and lifestyle. I can see you came from ${sourceLabel}.`,
+      text: `Hi, I'm Kai. I rank RoomingKos options from verified public listings and turn this chat into a staff handoff. I can see you came from ${sourceLabel}.`,
     },
     {
       id: 'm-1',
@@ -400,32 +275,36 @@ function KaiApp() {
   const activeStep = steps.find((step) => !prefs[step.key])
   const completedSteps = steps.filter((step) => prefs[step.key]).length
   const progress = Math.round((completedSteps / steps.length) * 100)
-  const recommendations = useMemo(
-    () =>
-      properties
-        .map((property) => ({
-          ...property,
-          score: scoreProperty(property, prefs),
-          reasons: matchReasons(property, prefs),
-        }))
-        .sort((a, b) => b.score - a.score),
-    [prefs],
-  )
+  const recommendations = useMemo(() => recommendationsFor(prefs), [prefs])
+  const topMatches = recommendations.slice(0, 3)
   const selectedProperty =
-    recommendations.find((property) => property.id === selectedPropertyId) ??
+    recommendations.find((option) => option.id === selectedPropertyId) ??
     recommendations[0]
+  const requestedInspection =
+    requestedInspectionId === null
+      ? null
+      : recommendations.find((option) => option.id === requestedInspectionId) ?? null
+  const conversionReadiness = leadReadinessScore({
+    completedSteps,
+    topMatch: topMatches[0],
+    moveInCaptured: Boolean(prefs.moveIn),
+  })
+  const priceMin = Math.min(...catalogStats.pricePoints)
+  const priceMax = Math.max(...catalogStats.pricePoints)
 
-  const handoffText = [
-    'Kai lead handoff',
-    `Source: ${sourceLabel}`,
-    `Budget: ${shortValue(prefs.budget)}`,
-    `Move-in: ${shortValue(prefs.moveIn)}`,
-    `Location: ${shortValue(prefs.location)}`,
-    `Stay length: ${shortValue(prefs.stay)}`,
-    `Lifestyle: ${shortValue(prefs.lifestyle)}`,
-    `Facility priority: ${shortValue(prefs.facilities)}`,
-    `Top match: ${recommendations[0].name}, $${recommendations[0].weekly}/wk, ${recommendations[0].score}% fit`,
-  ].join('\n')
+  const handoffText = buildHandoffText({
+    sourceLabel,
+    prefs,
+    topMatches,
+    conversionReadiness,
+    requestedInspection,
+  })
+
+  useEffect(() => {
+    if (recommendations[0]) {
+      setSelectedPropertyId(recommendations[0].id)
+    }
+  }, [recommendations])
 
   function answerCurrentStep(answer: string) {
     if (!activeStep) return
@@ -442,7 +321,7 @@ function KaiApp() {
       from: 'kai',
       text: nextStep
         ? nextStep.prompt
-        : 'I have enough to rank the strongest options. Here are the best matches and what I would hand over to the RoomingKos team.',
+        : 'I have enough to rank the strongest options. Here are the best matches and the handoff I would send to the RoomingKos team.',
     }
 
     setPrefs(nextPrefs)
@@ -466,21 +345,53 @@ function KaiApp() {
     window.setTimeout(() => setCopied(false), 1800)
   }
 
-  function requestInspection(propertyName: string) {
+  function requestInspection(optionId: string) {
+    const option = recommendations.find((item) => item.id === optionId)
+    if (!option) return
+
+    setSelectedPropertyId(option.id)
+    setRequestedInspectionId(option.id)
     setMessages((current) => [
       ...current,
       {
         id: `m-${Date.now()}-u`,
         from: 'customer',
-        text: `I want to inspect ${propertyName}.`,
+        text: `I want to inspect ${option.displayName}.`,
       },
       {
         id: `m-${Date.now()}-k`,
         from: 'kai',
-        text: `Great. I would send ${propertyName} with your lead brief to the RoomingKos team so they can confirm availability and inspection times.`,
+        text: `Great. I would add ${option.displayName} as the requested inspection in the staff brief so the RoomingKos team can confirm availability, waitlist or inspection times.`,
       },
     ])
   }
+
+  const heroMetrics = [
+    {
+      icon: Database,
+      value: `${catalogStats.total}`,
+      label: 'verified listings',
+      caption: `${catalogStats.groupCounts.building} buildings + ${catalogStats.groupCounts.rooming_house} houses`,
+    },
+    {
+      icon: BarChart3,
+      value: `${catalogStats.statusCounts.Available}`,
+      label: 'available options',
+      caption: `${catalogStats.statusCounts.Waitlist} waitlist backups`,
+    },
+    {
+      icon: FileCheck2,
+      value: `${catalogStats.roomTypeCount}`,
+      label: 'clean room types',
+      caption: `${catalogAudit.sourceRoomRows} source rows checked`,
+    },
+    {
+      icon: KeyRound,
+      value: `$${money(priceMin)}-$${money(priceMax)}`,
+      label: 'weekly price span',
+      caption: `${catalogStats.applyUrlCount} public apply links`,
+    },
+  ]
 
   return (
     <main className="app-shell">
@@ -492,10 +403,32 @@ function KaiApp() {
             <h1>Kai</h1>
           </div>
         </div>
-        <a className="site-link" href="?view=site">
-          <ExternalLink size={18} />
-          Preview site toggle
-        </a>
+        <div className="topbar-actions">
+          <div className="audit-badge">
+            <BadgeCheck size={18} />
+            {catalogAudit.verificationResult} public-data audit
+          </div>
+          <a className="site-link" href="?view=site">
+            <ExternalLink size={18} />
+            Preview site toggle
+          </a>
+        </div>
+      </section>
+
+      <section className="command-hero" aria-label="Kai operating summary">
+        <div className="command-copy">
+          <p className="eyebrow">Lead conversion cockpit</p>
+          <h2>From browsing signal to inspection-ready handoff.</h2>
+          <p>
+            Kai qualifies the prospect, ranks real RoomingKos stock, exposes the evidence,
+            and prepares a concise staff brief without pretending to submit applications.
+          </p>
+        </div>
+        <div className="hero-metrics" aria-label="Catalog audit metrics">
+          {heroMetrics.map((metric) => (
+            <MetricTile key={metric.label} {...metric} />
+          ))}
+        </div>
       </section>
 
       <section className="workspace">
@@ -503,16 +436,23 @@ function KaiApp() {
           <div className="panel-header">
             <div>
               <p className="eyebrow">Live consultation</p>
-              <h2>Find the best room fit</h2>
+              <h2>Qualify the lead</h2>
+              <span>Budget, timing, location, stay length, lifestyle and facilities.</span>
             </div>
             <div className="agent-pill">
-              <Bot size={18} />
+              <Sparkles size={18} />
               Kai active
             </div>
           </div>
 
-          <div className="progress-track" aria-label={`${progress}% complete`}>
-            <span style={{ width: `${progress}%` }} />
+          <div className="progress-shell">
+            <div>
+              <strong>{progress}%</strong>
+              <span>{completedSteps} of {steps.length} signals captured</span>
+            </div>
+            <div className="progress-track" aria-label={`${progress}% complete`}>
+              <span style={{ width: `${progress}%` }} />
+            </div>
           </div>
 
           <div className="messages">
@@ -530,7 +470,7 @@ function KaiApp() {
             <div className="answer-dock">
               <div className="step-label">
                 <activeStep.icon size={17} />
-                {activeStep.label}
+                <span>{activeStep.label}</span>
               </div>
               <div className="quick-replies">
                 {activeStep.options.map((option) => (
@@ -558,6 +498,7 @@ function KaiApp() {
               <div>
                 <p className="eyebrow">Next action</p>
                 <strong>Send lead brief to RoomingKos staff</strong>
+                <span>{readinessLabel(conversionReadiness)} at {conversionReadiness}% readiness</span>
               </div>
               <button type="button" onClick={copyHandoff}>
                 {copied ? <Check size={18} /> : <ClipboardCheck size={18} />}
@@ -567,11 +508,20 @@ function KaiApp() {
           )}
         </section>
 
-        <aside className="lead-panel" aria-label="Lead profile">
+        <aside className="lead-panel" aria-label="Lead profile and data evidence">
+          <div className="deal-card">
+            <div>
+              <p className="eyebrow">Conversion readiness</p>
+              <strong>{conversionReadiness}%</strong>
+              <span>{readinessLabel(conversionReadiness)}</span>
+            </div>
+            <TrendingUp size={26} />
+          </div>
+
           <div className="source-card">
             <p className="eyebrow">Entry point</p>
             <strong>{sourceLabel}</strong>
-            <span>Referral context follows the lead into Kai.</span>
+            <span>Referral context follows the lead into Kai and the staff brief.</span>
           </div>
 
           <div className="lead-grid">
@@ -587,9 +537,30 @@ function KaiApp() {
             })}
           </div>
 
+          <div className="data-card">
+            <div className="data-card-head">
+              <Database size={18} />
+              <strong>Evidence spine</strong>
+            </div>
+            <dl>
+              <div>
+                <dt>Generated</dt>
+                <dd>{catalogAudit.catalogGeneratedAt}</dd>
+              </div>
+              <div>
+                <dt>Coverage</dt>
+                <dd>{catalogStats.sourceUrlCount}/{catalogStats.total} source URLs</dd>
+              </div>
+              <div>
+                <dt>Safety</dt>
+                <dd>No login, upload, payment or application submission.</dd>
+              </div>
+            </dl>
+          </div>
+
           <div className="handoff-card">
             <div className="handoff-header">
-              <ClipboardCheck size={18} />
+              <Send size={18} />
               <strong>Staff handoff</strong>
             </div>
             <pre>{handoffText}</pre>
@@ -603,35 +574,64 @@ function KaiApp() {
             <p className="eyebrow">Kai recommendation set</p>
             <h2>Ranked RoomingKos options</h2>
           </div>
-          <span>{recommendations[0].score}% top fit</span>
+          <span>
+            <Target size={17} />
+            {topMatches[0].score}% top fit
+          </span>
+        </div>
+
+        <div className="data-rail" aria-label="Recommendation data quality">
+          <div>
+            <Clock3 size={18} />
+            <span>Scrape verified {catalogAudit.publicScrapeVerifiedAt}</span>
+          </div>
+          <div>
+            <FileCheck2 size={18} />
+            <span>{catalogStats.withRoomTypes} listings include room-type rows</span>
+          </div>
+          <div>
+            <LineChart size={18} />
+            <span>Scores update from every captured answer</span>
+          </div>
         </div>
 
         <div className="property-layout">
           <div className="property-list">
-            {recommendations.slice(0, 3).map((property) => (
-              <article className="property-card" key={property.id}>
+            {topMatches.map((option) => (
+              <article className="property-card" key={option.id}>
                 <div className="property-image">
-                  <img src={property.image} alt={`${property.name} interior`} />
-                  <span style={{ background: property.accent }}>{property.score}% fit</span>
+                  <img src={option.imageUrl} alt={`${option.displayName} listing`} />
+                  <span style={{ background: statusAccent(option) }}>{option.score}% fit</span>
                 </div>
                 <div className="property-body">
                   <div>
-                    <h3>{property.name}</h3>
-                    <p>
-                      {property.neighborhood} · ${property.weekly}/wk · available in{' '}
-                      {property.availableInDays} days
-                    </p>
+                    <div className="option-badges">
+                      <span className={`status-badge ${option.status.toLowerCase().replaceAll(' ', '-')}`}>
+                        {option.status}
+                      </span>
+                      {option.group === 'rooming_house' ? (
+                        <span className="group-badge">Rooming house</span>
+                      ) : (
+                        <span className="group-badge">Named building</span>
+                      )}
+                    </div>
+                    <h3>{option.displayName}</h3>
+                    <p>{`${locationLabel(option)} · ${priceLabel(option)} · ${roomTypeCountLabel(option)}`}</p>
                   </div>
                   <ul>
-                    {property.reasons.map((reason) => (
+                    {option.reasons.map((reason) => (
                       <li key={reason}>{reason}</li>
                     ))}
                   </ul>
+                  <div className="source-mini">
+                    <FileCheck2 size={15} />
+                    <span>Public listing evidence attached</span>
+                  </div>
                   <div className="card-actions">
-                    <button type="button" onClick={() => setSelectedPropertyId(property.id)}>
+                    <button type="button" onClick={() => setSelectedPropertyId(option.id)}>
                       Compare
                     </button>
-                    <button type="button" onClick={() => requestInspection(property.name)}>
+                    <button type="button" onClick={() => requestInspection(option.id)}>
                       <Phone size={16} />
                       Inspect
                     </button>
@@ -643,28 +643,58 @@ function KaiApp() {
 
           <aside className="compare-panel">
             <div className="compare-image">
-              <img src={selectedProperty.image} alt={`${selectedProperty.name} detail`} />
+              <img src={selectedProperty.imageUrl} alt={`${selectedProperty.displayName} detail`} />
             </div>
-            <p className="eyebrow">Selected comparison</p>
-            <h3>{selectedProperty.name}</h3>
-            <dl>
-              <div>
-                <dt>Weekly rent</dt>
-                <dd>${selectedProperty.weekly}</dd>
+            <div className="compare-copy">
+              <p className="eyebrow">Selected comparison</p>
+              <h3>{selectedProperty.displayName}</h3>
+              <dl>
+                <div>
+                  <dt>Status</dt>
+                  <dd>{selectedProperty.status}</dd>
+                </div>
+                <div>
+                  <dt>Weekly from</dt>
+                  <dd>{priceLabel(selectedProperty)}</dd>
+                </div>
+                <div>
+                  <dt>Room types</dt>
+                  <dd>{roomTypeSummary(selectedProperty)}</dd>
+                </div>
+                <div>
+                  <dt>Location</dt>
+                  <dd>{locationLabel(selectedProperty)}</dd>
+                </div>
+                <div>
+                  <dt>Public source</dt>
+                  <dd>
+                    <a href={selectedProperty.sourceUrl} target="_blank" rel="noreferrer">
+                      Open listing
+                    </a>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Apply link</dt>
+                  <dd>
+                    {selectedProperty.applyUrl ? (
+                      <a href={selectedProperty.applyUrl} target="_blank" rel="noreferrer">
+                        Open entrypoint
+                      </a>
+                    ) : (
+                      'Not published'
+                    )}
+                  </dd>
+                </div>
+              </dl>
+              <div className="evidence-notes">
+                <strong>Catalog notes</strong>
+                <ul>
+                  {selectedProperty.matchNotes.slice(0, 3).map((note) => (
+                    <li key={note}>{note}</li>
+                  ))}
+                </ul>
               </div>
-              <div>
-                <dt>Room type</dt>
-                <dd>{selectedProperty.roomType}</dd>
-              </div>
-              <div>
-                <dt>Minimum stay</dt>
-                <dd>{selectedProperty.minStayMonths} months</dd>
-              </div>
-              <div>
-                <dt>Facilities</dt>
-                <dd>{selectedProperty.facilities.join(', ')}</dd>
-              </div>
-            </dl>
+            </div>
           </aside>
         </div>
       </section>
@@ -673,7 +703,7 @@ function KaiApp() {
 }
 
 function App() {
-  return isSitePreview() ? <RoomingKosSitePreview /> : <KaiApp />
+  return isSitePreviewFromSearch(window.location.search) ? <RoomingKosSitePreview /> : <KaiApp />
 }
 
 export default App

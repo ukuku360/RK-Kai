@@ -4,12 +4,18 @@
     script?.dataset.kaiUrl ||
     new URL('/?source=roomingkos-site', script?.src || window.location.href).toString();
 
-  if (document.querySelector('[data-kai-toggle-root]')) {
-    return;
-  }
+  const mount = () => {
+    if (document.querySelector('[data-kai-toggle-root]')) {
+      return;
+    }
 
-  const style = document.createElement('style');
-  style.textContent = `
+    if (!document.body) {
+      document.addEventListener('DOMContentLoaded', mount, { once: true });
+      return;
+    }
+
+    const style = document.createElement('style');
+    style.textContent = `
     [data-kai-toggle-root] {
       position: fixed;
       right: 22px;
@@ -56,26 +62,29 @@
     }
   `;
 
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.setAttribute('data-kai-toggle-root', '');
-  button.setAttribute('aria-label', 'Open Kai room matching assistant');
-  button.innerHTML = `
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.setAttribute('data-kai-toggle-root', '');
+    button.setAttribute('aria-label', 'Open Kai room matching assistant');
+    button.innerHTML = `
     <span>K</span>
     <strong>Ask Kai<small>AI room matching</small></strong>
   `;
 
-  button.addEventListener('click', () => {
-    const url = new URL(configuredUrl, window.location.href);
-    if (!url.searchParams.has('source')) {
-      url.searchParams.set('source', 'roomingkos-site');
-    }
-    if (!url.searchParams.has('from')) {
-      url.searchParams.set('from', window.location.pathname);
-    }
-    window.location.href = url.toString();
-  });
+    button.addEventListener('click', () => {
+      const url = new URL(configuredUrl, window.location.href);
+      if (!url.searchParams.has('source')) {
+        url.searchParams.set('source', 'roomingkos-site');
+      }
+      if (!url.searchParams.has('from')) {
+        url.searchParams.set('from', window.location.pathname);
+      }
+      window.location.href = url.toString();
+    });
 
-  document.head.appendChild(style);
-  document.body.appendChild(button);
+    document.head.appendChild(style);
+    document.body.appendChild(button);
+  };
+
+  mount();
 })();

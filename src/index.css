@@ -1,33 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600..800&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
 
 :root {
   --paper: #ffffff;
-  --ground: #f4f7f5;
-  --ink: #131614;
-  --text: #3f4b45;
-  --muted: #707b75;
-  --line: #dde5df;
-  --line-strong: #c4d0c8;
-  --green: #1d8f79;
-  --coral: #f36f45;
-  --amber: #d2a522;
-  --blue: #4f70a7;
-  --display: 'Fraunces', Georgia, serif;
-  --body: 'IBM Plex Sans', 'Aptos', sans-serif;
-  --mono: 'SFMono-Regular', 'Cascadia Code', monospace;
-  --shadow: 0 20px 60px rgba(19, 22, 20, 0.08);
+  --surface: #fbfcfa;
+  --ground: #f1f4ee;
+  --ink: #141916;
+  --text: #3f4e47;
+  --muted: #728079;
+  --line: #dce4dd;
+  --line-strong: #c1ccc4;
+  --green: #0b7f69;
+  --coral: #b85b3e;
+  --amber: #a8750e;
+  --blue: #315f7f;
+  --signal: #f1c14f;
+  --display: 'Manrope', 'Aptos', sans-serif;
+  --body: 'Manrope', 'Aptos', sans-serif;
+  --mono: 'IBM Plex Mono', 'SFMono-Regular', 'Cascadia Code', monospace;
+  --shadow: 0 16px 44px rgba(20, 25, 22, 0.07);
+  --shadow-strong: 0 22px 70px rgba(20, 25, 22, 0.13);
   color: var(--text);
   background:
-    linear-gradient(90deg, rgba(19, 22, 20, 0.035) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(19, 22, 20, 0.035) 1px, transparent 1px),
-    linear-gradient(135deg, rgba(29, 143, 121, 0.12), transparent 36%),
-    linear-gradient(315deg, rgba(243, 111, 69, 0.1), transparent 42%),
+    linear-gradient(90deg, rgba(20, 25, 22, 0.028) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(20, 25, 22, 0.028) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(246, 249, 244, 0.94)),
     var(--ground);
   background-size:
-    42px 42px,
-    42px 42px,
-    auto,
-    auto,
+    44px 44px,
+    44px 44px,
     auto;
   font-family: var(--body);
   font-synthesis: none;
