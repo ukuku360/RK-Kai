@@ -2,6 +2,8 @@
 
 Kai is a sales-conversion demo for RoomingKos. It captures a prospect's room search needs, ranks mock RoomingKos listings, explains the match, and prepares a staff handoff brief.
 
+Live demo: https://rk-8ghek0h9q-yoonho-nas-projects.vercel.app
+
 ## Demo Scope
 
 - Conversational intake for budget, move-in timing, preferred area, stay length, lifestyle, and facilities.
@@ -18,12 +20,12 @@ npm run dev
 
 ## RoomingKos Website Toggle
 
-Add this script to the RoomingKos website template. Replace the URL with the final Kai deployment URL.
+Add this script to the RoomingKos website template.
 
 ```html
 <script
-  src="https://YOUR-KAI-DEPLOYMENT.vercel.app/kai-toggle.js"
-  data-kai-url="https://YOUR-KAI-DEPLOYMENT.vercel.app/?source=roomingkos-site"
+  src="https://rk-8ghek0h9q-yoonho-nas-projects.vercel.app/kai-toggle.js"
+  data-kai-url="https://rk-8ghek0h9q-yoonho-nas-projects.vercel.app/?source=roomingkos-site"
   defer
 ></script>
 ```
